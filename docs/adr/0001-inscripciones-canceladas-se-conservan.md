@@ -1,5 +1,7 @@
 # Las inscripciones canceladas se conservan
 
+> _Superseded en parte por ADR-0002: se mantiene la conservación de las canceladas, pero ya no se bloquea la reinscripción._
+
 Una inscripción cancelada no se borra: queda la fila con el instante en que el alumno decidió cancelar. La disponibilidad y la validación de capacidad cuentan solo inscripciones vigentes, y el alumno no puede volver a inscribirse en esa actividad. Se descartó borrar la fila porque perdería la decisión del alumno —lo único que el docente puede auditar— a cambio de una simplicidad que el constraint único ya nos da igual.
 
 ## Considered Options

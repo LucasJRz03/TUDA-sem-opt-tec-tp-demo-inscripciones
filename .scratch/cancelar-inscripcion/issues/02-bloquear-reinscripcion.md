@@ -17,3 +17,5 @@
 ## Comments
 
 Implementado en `09af218`, integrado en `feat/cancelar-inscripcion`. Resultado propio `previously_cancelled` evaluado antes de habilitación, inicio y cupo; mensaje distinto y detalle sin formulario. La cobertura HTTP recorre actividad llena, deshabilitada e iniciada. Suite completa: 49 pruebas OK.
+
+**Superseded por `.scratch/reinscripcion/spec.md` (ADR-0002):** la decisión de bloquear la reinscripción ya no rige. El registro histórico se conserva; el comportamiento se reemplaza por la nueva feature.

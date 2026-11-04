@@ -9,12 +9,16 @@ Un encuentro ofrecido a la comunidad universitaria, con fecha de inicio, capacid
 _Avoid_: Evento, curso, clase
 
 **Inscripción**:
-Vínculo entre un alumno y una actividad que reserva un cupo hasta el inicio de la actividad. Cada alumno tiene como máximo una inscripción por actividad, esté vigente o cancelada.
+Vínculo entre un alumno y una actividad que reserva un cupo hasta el inicio de la actividad. Cada alumno tiene como máximo una inscripción vigente por actividad; las canceladas se conservan como historial.
 _Avoid_: Registro, reserva, alta
 
 **Cancelación**:
 Decisión del alumno de renunciar a su inscripción dentro de la ventana de cancelación. La inscripción deja de ocupar cupo, pero se conserva junto con el instante en que se decidió.
 _Avoid_: Baja, anulación, borrado, desinscripción
+
+**Reinscripción**:
+Nueva inscripción de un alumno en una actividad donde antes canceló. Se rige por las mismas reglas que una primera inscripción y no tiene límite de ciclos.
+_Avoid_: Reactivación, re-alta
 
 **Ventana de cancelación**:
 Período en el que el alumno puede cancelar: desde que se inscribe hasta 24 horas antes del inicio de la actividad.
