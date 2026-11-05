@@ -53,27 +53,29 @@ class ViewTests(BaseCase):
         response=page()
         self.assertContains(response,"Inscripción cancelada el 01/10/2030 09:00")
         self.assertNotContains(response,"Cancelar inscripción");self.assertNotContains(response,"Inscribirme")
-    def test_reregistration_over_cancelled_explains_and_creates_no_row(self):
+    def test_reregistration_over_cancelled_via_http_creates_a_new_row(self):
         self.client.force_login(self.ana); self.enroll(); self.cancel()
         with freeze_view_clock(self.client, NOW):
-            page=self.client.get(f"/activities/{self.activity.pk}/")
             response=self.client.post(f"/activities/{self.activity.pk}/register/", follow=True)
-        self.assertContains(page,"No podés volver a inscribirte en esta actividad.")
-        self.assertNotContains(page,"Inscribirme")
-        self.assertContains(response,"Cancelaste tu inscripción; no podés volver a inscribirte.")
+        self.assertContains(response,"Inscripción confirmada.")
         self.assertNotContains(response,"Ya estás inscripto")
-        self.assertEqual(Registration.objects.count(),1)
-    def test_http_reregistration_blocked_when_full_disabled_or_started(self):
+        self.assertEqual(Registration.objects.count(),2)
+        self.assertEqual(Registration.objects.filter(cancelled_at__isnull=True).count(),1)
+    def test_http_reregistration_respects_full_disabled_or_started(self):
         self.client.force_login(self.ana)
-        configurations={"llena":dict(capacity=1),"deshabilitada":dict(is_active=False),"iniciada":dict(starts_at=timezone.now()-timedelta(hours=1))}
-        for name,config in configurations.items():
+        configurations={
+            "llena": (dict(capacity=1), "La actividad no tiene cupos disponibles."),
+            "deshabilitada": (dict(is_active=False), "La actividad está deshabilitada."),
+            "iniciada": (dict(starts_at=timezone.now()-timedelta(hours=1)), "La actividad ya comenzó."),
+        }
+        for name,(config,message) in configurations.items():
             with self.subTest(name):
                 target=activity(title=name,**config)
                 Registration.objects.create(student=self.ana,activity=target,cancelled_at=NOW)
                 if name=="llena": Registration.objects.create(student=self.bruno,activity=target)
                 before=Registration.objects.count()
                 response=self.client.post(f"/activities/{target.pk}/register/",follow=True)
-                self.assertContains(response,"Cancelaste tu inscripción; no podés volver a inscribirte.")
+                self.assertContains(response,message)
                 self.assertEqual(Registration.objects.count(),before)
     def test_catalog_filters_and_full_visible(self):
         self.client.force_login(self.ana)
