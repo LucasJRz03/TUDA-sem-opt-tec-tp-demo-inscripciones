@@ -116,3 +116,24 @@ La exportación excluye bases SQLite, entornos, caches y secretos. Las solucione
 ## Revisión técnica del checkpoint actual
 
 La base actual (v2) evalúa el reloj real de inscripción dentro de IMMEDIATE inmediatamente antes de verificar el inicio. Así, una solicitud que espera un escritor y llega a una actividad ya iniciada devuelve `started` sin ocupar cupo. El parámetro `now` conserva el reloj fijo de pruebas; los duplicados se reconocen primero. La versión anterior se preserva como `base-v1.tar.gz` para reproducir los recorridos históricos; no se reescribe su procedencia.
+
+## Entrega: Flujo de Agentes con Matt Pocock Skills
+
+## Dominio
+- `GLOSSARY.md`: Vocabulario de dominio actualizado término por término durante el grill.
+- `docs/adr/`: Decisiones arquitectónicas (ADR-0001 histórico y ADR-0002 con supersesión parcial).
+
+## Plan
+- `.scratch/reinscripcion/spec.md`: Especificación técnica acordada.
+- `.scratch/reinscripcion/issues/`: 5 tickets verticales (de constraint a concurrencia).
+
+## Código
+Historial de Git con commits atómicos por ticket, todos con TDD (tests en rojo → verde) y sin deudas de migración:
+- `feat: aplicar unicidad solo a inscripciones vigentes`
+- `feat: permitir reinscripcion creando una fila nueva`
+- `feat: mostrar la reinscripcion en el detalle y mis inscripciones`
+- `test: cubrir historial docente y seed de reinscripcion`
+- `test: concurrencia en reinscripciones`
+
+## Reflexión
+A diferencia de flujos más pesados como Spec-Kit, decidimos mantener la documentación ágil: solo creamos el ADR-0002 para superseder parcialmente al 0001, preservando el historial de decisiones. Durante el grill, no habíamos considerado explícitamente las condiciones de carrera en reinscripciones simultáneas, lo que el agente detectó y derivó en el Ticket 05. La retro propuso mejorar el entorno activando los pre-commit hooks y documentando el patrón de testing de concurrencia con TransactionTestCase en docs/agents/.
