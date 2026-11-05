@@ -4,7 +4,7 @@ from django.test import Client
 from django.utils import timezone
 from activities.models import Registration
 from activities.services import register
-from .support import NOW, BaseCase, activity, freeze_view_clock
+from .support import NOW, BaseCase, activity, freeze_view_clock, login_teacher
 
 class ViewTests(BaseCase):
     def test_session_login_and_logout_post(self):
@@ -300,6 +300,23 @@ class ViewTests(BaseCase):
         self.assertContains(response,'Cancelada')
         html=response.content.decode()
         self.assertLess(html.index('bruno'),html.index('ana'))
+    def test_teacher_detail_lists_re_registration_history_current_first_then_by_creation(self):
+        teacher=login_teacher(self.client)
+        self.activity.responsible=teacher;self.activity.save()
+        self.enroll();self.cancel();self.enroll();self.cancel();self.enroll()
+        rows=list(self.activity.registrations.order_by('pk'))
+        self.assertEqual(len(rows),3)
+        Registration.objects.filter(pk=rows[0].pk).update(created_at=NOW-timedelta(days=4))
+        Registration.objects.filter(pk=rows[1].pk).update(created_at=NOW-timedelta(days=3))
+        Registration.objects.filter(pk=rows[2].pk).update(created_at=NOW-timedelta(days=2))
+        response=self.client.get(f'/teacher/activities/{self.activity.pk}/')
+        self.assertContains(response,'<td>ana</td>',count=3,html=True)
+        self.assertContains(response,'Vigente')
+        self.assertContains(response,'Cancelada',count=2)
+        html=response.content.decode()
+        self.assertLess(html.index('Vigente'),html.index('Cancelada'))
+        self.assertLess(html.index('29/09/2030 09:00'),html.index('27/09/2030 09:00'))
+        self.assertLess(html.index('27/09/2030 09:00'),html.index('28/09/2030 09:00'))
     def test_teacher_detail_requires_staff_and_ownership(self):
         from django.contrib.auth import get_user_model
         User=get_user_model()

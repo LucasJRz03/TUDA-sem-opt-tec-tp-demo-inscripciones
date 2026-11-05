@@ -16,6 +16,19 @@ class AdminTests(BaseCase):
         expected="1 Oct. 2030 09:00"
         self.assertContains(self.client.get("/admin/activities/registration/"),expected)
         self.assertContains(self.client.get(f"/admin/activities/registration/{registration.pk}/change/"),expected)
+    def test_admin_registration_list_shows_re_registration_history_and_preserves_cancellation(self):
+        self.enroll();self.cancel();self.enroll()
+        login_teacher(self.client)
+        registrations=list(self.activity.registrations.order_by("pk"))
+        self.assertEqual(len(registrations),2)
+        listing=self.client.get("/admin/activities/registration/")
+        for registration in registrations:
+            self.assertContains(listing,f"/admin/activities/registration/{registration.pk}/change/")
+        cancelled=next(registration for registration in registrations if registration.cancelled_at)
+        current=next(registration for registration in registrations if registration.cancelled_at is None)
+        self.assertContains(listing,"1 Oct. 2030 09:00",count=1)
+        self.assertEqual(cancelled.cancelled_at,NOW)
+        self.assertIsNone(current.cancelled_at)
     def test_admin_registration_stays_read_only(self):
         self.enroll();self.cancel()
         login_teacher(self.client)
