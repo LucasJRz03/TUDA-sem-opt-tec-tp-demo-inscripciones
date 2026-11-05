@@ -30,10 +30,12 @@ def catalog(request):
 @login_required
 def detail(request, pk):
     activity = get_object_or_404(with_availability(), pk=pk)
-    registration = Registration.objects.filter(activity=activity, student=request.user).first()
+    registrations = Registration.objects.filter(activity=activity, student=request.user)
+    registration = registrations.filter(cancelled_at__isnull=True).first()
+    last_cancellation = registrations.filter(cancelled_at__isnull=False).order_by("-cancelled_at", "-pk").first()
     now = timezone.now()
     open_for_registration = activity.is_active and activity.starts_at > now and activity.available > 0
-    return render(request, "activities/detail.html", {"activity": activity, "registration": registration, "can_register": open_for_registration and registration is None, "can_cancel": can_cancel(registration, now), "cancellation_window_hours": CANCELLATION_WINDOW_HOURS, "form": RegistrationForm()})
+    return render(request, "activities/detail.html", {"activity": activity, "registration": registration, "last_cancellation": last_cancellation, "can_register": open_for_registration and registration is None, "can_cancel": can_cancel(registration, now), "cancellation_window_hours": CANCELLATION_WINDOW_HOURS, "form": RegistrationForm()})
 
 @login_required
 @require_POST

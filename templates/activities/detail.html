@@ -18,9 +18,7 @@
   <section class="panel">
     {% if registration %}
       {% include 'activities/_registration_state.html' with registration=registration can_cancel=can_cancel %}
-      {% if registration.cancelled_at %}
-      <p>No podés volver a inscribirte en esta actividad.</p>
-      {% elif not can_cancel %}
+      {% if not can_cancel %}
       <p class="muted">Solo podés cancelar hasta {{ cancellation_window_hours }} horas antes del inicio de la actividad.</p>
       {% endif %}
     {% elif can_register %}
@@ -29,6 +27,9 @@
     </form>
     {% else %}
     <p class="muted">Esta actividad no admite nuevas inscripciones.</p>
+    {% endif %}
+    {% if last_cancellation %}
+    {% include 'activities/_registration_state.html' with registration=last_cancellation can_cancel=False %}
     {% endif %}
   </section>
 </article>
