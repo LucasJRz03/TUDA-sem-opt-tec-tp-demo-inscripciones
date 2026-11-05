@@ -6,9 +6,13 @@
 
 **Spec:** ../spec.md
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] La vista docente muestra todas las filas, incluidas las cancelaciones y las reinscripciones.
-- [ ] El orden mantiene vigentes primero y luego por fecha de creación.
-- [ ] El seed no recrea una inscripción si existe cualquier fila del alumno en la actividad, aunque esté cancelada.
-- [ ] Pruebas de administración y seed cubren el historial y la preservación de la cancelación.
+- [x] La vista docente muestra todas las filas, incluidas las cancelaciones y las reinscripciones.
+- [x] El orden mantiene vigentes primero y luego por fecha de creación.
+- [x] El seed no recrea una inscripción si existe cualquier fila del alumno en la actividad, aunque esté cancelada.
+- [x] Pruebas de administración y seed cubren el historial y la preservación de la cancelación.
+
+## Comments
+
+La vista docente y el seed ya cumplían el comportamiento en el código existente: el detalle no filtra por estado y ordena vigentes primero, y el seed usa `exists()` sin filtrar `cancelled_at`. Se agregaron pruebas de regresión: historial de reinscripción en el detalle docente con orden vigente primero y luego por fecha de creación, historial de dos filas en la administración con la cancelación preservada, y seed repetido sobre cancelación y reinscripción sin recrear ni una fila más. Suite completa: 76 pruebas OK; `makemigrations --check` sin cambios. Code review: sin violaciones duras; se cerró el hueco de orden secundario señalado por Spec y se consolidó la prueba de seed para evitar duplicación.
