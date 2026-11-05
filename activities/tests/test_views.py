@@ -52,7 +52,37 @@ class ViewTests(BaseCase):
         self.assertEqual(self.cancel(now=NOW+timedelta(hours=1)),"already_cancelled")
         response=page()
         self.assertContains(response,"Inscripción cancelada el 01/10/2030 09:00")
-        self.assertNotContains(response,"Cancelar inscripción");self.assertNotContains(response,"Inscribirme")
+        self.assertContains(response,"Inscribirme")
+        self.assertNotContains(response,"Cancelar inscripción")
+    def test_detail_offers_the_form_again_and_reregistration_confirms_and_updates_availability(self):
+        self.client.force_login(self.ana); self.enroll(); self.cancel()
+        with freeze_view_clock(self.client,NOW):
+            page=self.client.get(f"/activities/{self.activity.pk}/")
+            self.assertContains(page,"Inscripción cancelada el 01/10/2030 09:00")
+            self.assertContains(page,"Inscribirme")
+            response=self.client.post(f"/activities/{self.activity.pk}/register/",follow=True)
+        self.assertContains(response,"Inscripción confirmada.")
+        self.assertEqual(Registration.objects.filter(cancelled_at__isnull=True).count(),1)
+        page=self.client.get(f"/activities/{self.activity.pk}/")
+        self.assertContains(page,"Tu inscripción está confirmada.")
+        self.assertContains(page,"1 cupos")
+    def test_detail_without_current_hides_the_form_when_the_rules_block_reentry(self):
+        self.client.force_login(self.ana); self.enroll(); self.cancel()
+        self.activity.is_active=False; self.activity.save()
+        with freeze_view_clock(self.client,NOW):
+            response=self.client.get(f"/activities/{self.activity.pk}/")
+        self.assertContains(response,"Inscripción cancelada el 01/10/2030 09:00")
+        self.assertNotContains(response,"Inscribirme")
+        self.assertContains(response,"Esta actividad no admite nuevas inscripciones.")
+    def test_mine_lists_cancellations_and_the_current_row_newest_first(self):
+        self.client.force_login(self.ana); self.enroll(); self.cancel(); self.enroll()
+        with freeze_view_clock(self.client,NOW):
+            response=self.client.get("/my-registrations/")
+        self.assertContains(response,"Tu inscripción está confirmada.")
+        self.assertContains(response,"Inscripción cancelada el 01/10/2030 09:00")
+        self.assertContains(response,"Cancelar inscripción",count=1)
+        html=response.content.decode()
+        self.assertLess(html.index("Tu inscripción está confirmada."),html.index("Inscripción cancelada el 01/10/2030 09:00"))
     def test_reregistration_over_cancelled_via_http_creates_a_new_row(self):
         self.client.force_login(self.ana); self.enroll(); self.cancel()
         with freeze_view_clock(self.client, NOW):
