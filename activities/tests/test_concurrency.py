@@ -71,6 +71,25 @@ class ConcurrencyTests(TransactionTestCase):
         # La cancelación perdedora no pisa el instante de la ganadora.
         self.assertEqual(Registration.objects.get(student=self.ana).cancelled_at,NOW if outcomes[0]=="cancelled" else later)
 
+    def test_simultaneous_reregistrations_leave_a_single_current(self):
+        self.assertEqual(register(student=self.ana,activity_id=self.activity.pk,now=NOW),"registered")
+        self.assertEqual(cancel_registration(student=self.ana,activity_id=self.activity.pk,now=NOW),"cancelled")
+        outcomes=self.race_registrations([self.ana,self.ana])
+        self.assertCountEqual(outcomes,["registered","already_registered"])
+        registrations=Registration.objects.filter(student=self.ana,activity=self.activity)
+        self.assertEqual(registrations.count(),2)
+        self.assertEqual(registrations.filter(cancelled_at__isnull=True).count(),1)
+
+    def test_cancelling_and_reregistering_in_parallel_never_leave_two_current(self):
+        self.assertEqual(register(student=self.ana,activity_id=self.activity.pk,now=NOW),"registered")
+        outcomes=self.race([
+            lambda: cancel_registration(student=self.ana,activity_id=self.activity.pk,now=NOW),
+            lambda: register(student=self.ana,activity_id=self.activity.pk,now=NOW),
+        ])
+        self.assertIn(sorted(outcomes),[["already_registered","cancelled"],["cancelled","registered"]])
+        current=Registration.objects.filter(student=self.ana,activity=self.activity,cancelled_at__isnull=True)
+        self.assertLessEqual(current.count(),1)
+
     def test_registration_and_disabling_are_serialized(self):
         teacher=get_user_model().objects.create_user("docente-concurrencia",is_staff=True)
         self.activity.responsible=teacher; self.activity.save()
