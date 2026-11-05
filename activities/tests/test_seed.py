@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from activities.models import Activity, DemoSeed, Registration
-from activities.services import cancel_registration
+from activities.services import cancel_registration, register
 from .support import NOW, BaseCase, activity
 
 class SeedTests(BaseCase):
@@ -32,7 +32,7 @@ class SeedTests(BaseCase):
         call_command("reset_demo",confirm=True,reference_time=(NOW+timedelta(days=5)).isoformat(),stdout=StringIO())
         self.assertTrue(Activity.objects.filter(pk=self.activity.pk).exists())
         self.assertEqual(DemoSeed.objects.get().reference_time,NOW+timedelta(days=5))
-    def test_seed_preserves_cancelled_registration_without_warning(self):
+    def test_seed_preserves_cancelled_and_re_registration_history_without_recreating_rows(self):
         call_command("seed_demo",reference_time=NOW.isoformat(),stdout=StringIO())
         taller=Activity.objects.get(seed_key="taller")
         ana=get_user_model().objects.get(username="ana")
@@ -43,6 +43,14 @@ class SeedTests(BaseCase):
         self.assertEqual(registration.cancelled_at,NOW)
         self.assertEqual(taller.registrations.filter(student=ana).count(),1)
         self.assertEqual(taller.registrations.filter(cancelled_at__isnull=True).count(),1)
+        self.assertEqual(warning.getvalue(),"")
+        self.assertEqual(register(student=ana,activity_id=taller.pk,now=NOW),"registered")
+        warning=StringIO()
+        call_command("seed_demo",stdout=StringIO(),stderr=warning)
+        registrations=Registration.objects.filter(activity=taller,student=ana).order_by("pk")
+        self.assertEqual(registrations.count(),2)
+        self.assertEqual(registrations.filter(cancelled_at=NOW).count(),1)
+        self.assertEqual(registrations.filter(cancelled_at__isnull=True).count(),1)
         self.assertEqual(warning.getvalue(),"")
     def test_reset_deletes_demo_activities_and_cancelled_registrations(self):
         call_command("seed_demo",reference_time=NOW.isoformat(),stdout=StringIO())
